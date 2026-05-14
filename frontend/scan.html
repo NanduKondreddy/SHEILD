@@ -55,11 +55,12 @@
 .lang-select{background:var(--card);border:1px solid var(--border);color:var(--white);font-family:var(--font-mono);font-size:11px;padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;outline:none;letter-spacing:0.04em}
 .lang-select:focus{border-color:var(--teal)}
 .free-bar{display:flex;align-items:center;justify-content:center;padding:10px 24px;background:var(--teal);color:var(--black);font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:0.06em;border-radius:0 0 var(--radius-lg) var(--radius-lg)}
-.translate-bar{display:none;align-items:center;gap:8px;padding:8px 0;margin-bottom:8px}
-.btn-translate{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(0,212,160,0.1);border:1px solid rgba(0,212,160,0.3);color:var(--teal);font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:0.04em;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.2s}
-.btn-translate:hover{background:rgba(0,212,160,0.2);border-color:var(--teal)}
-.btn-translate:disabled{opacity:0.5;cursor:not-allowed}
-.translate-hint{font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.03em}
+.translate-bar{display:none;align-items:center;gap:8px;padding:8px 4px;margin-bottom:4px}
+.translate-indicator{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.03em}
+.translate-indicator .dot{width:6px;height:6px;border-radius:50%;background:var(--teal);flex-shrink:0}
+.translate-indicator .dot.translating{animation:pulse-dot 0.8s ease infinite}
+.translate-indicator .dot.error{background:#ef4444}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.3}}
 </style>
 </head>
 <body>
@@ -112,8 +113,10 @@
           <textarea class="scan-textarea" id="scanInput" placeholder="Paste a suspicious message from WhatsApp, SMS, email, or any app..."></textarea>
         </div>
         <div class="translate-bar" id="translateBar">
-          <button class="btn-translate" id="translateBtn" onclick="translateInput()">🌐 Translate to <span id="translateLangName">English</span></button>
-          <span class="translate-hint" id="translateHint">Type in English → we'll translate it for you</span>
+          <div class="translate-indicator" id="translateStatus">
+            <span class="dot" id="translateDot"></span>
+            <span id="translateMsg">Auto-translate ON · Type in English → auto-converts to <span id="translateLangName">—</span></span>
+          </div>
         </div>
       </div>
       <div id="zoneImage" style="display:none">
@@ -443,9 +446,13 @@ function applyGeo(geo){
   document.getElementById('locCurrency').textContent=currency;
 }
 
-// ── Translation Feature ──────────────────────────────────────────────────
+// ── Auto-Translate Feature ───────────────────────────────────────────────
 const LANG_NAMES = {en:'English',es:'Español',fr:'Français',hi:'हिन्दी',pt:'Português',ar:'العربية',zh:'中文'};
 const LANG_CODES_MYMEMORY = {es:'es',fr:'fr',hi:'hi',pt:'pt',ar:'ar',zh:'zh-CN'};
+
+let _translateTimer = null;
+let _lastTranslatedText = '';  // track what we already translated to avoid loops
+let _isTranslating = false;
 
 function updateTranslateBar(lang) {
   const bar = document.getElementById('translateBar');
@@ -457,56 +464,83 @@ function updateTranslateBar(lang) {
   }
 }
 
-async function translateInput() {
+function setTranslateStatus(state, msg) {
+  const dot = document.getElementById('translateDot');
+  const msgEl = document.getElementById('translateMsg');
+  dot.className = 'dot';
+  if (state === 'idle') {
+    const lang = localStorage.getItem('dovtek_lang') || 'en';
+    msgEl.innerHTML = 'Auto-translate ON · Type in English → auto-converts to <span id="translateLangName">' + (LANG_NAMES[lang]||lang) + '</span>';
+  } else if (state === 'translating') {
+    dot.classList.add('translating');
+    msgEl.textContent = '⏳ Translating...';
+  } else if (state === 'done') {
+    msgEl.textContent = '✓ ' + (msg || 'Translated!');
+  } else if (state === 'error') {
+    dot.classList.add('error');
+    msgEl.textContent = '✗ ' + (msg || 'Translation failed');
+  }
+}
+
+async function doAutoTranslate(text) {
   const lang = localStorage.getItem('dovtek_lang') || 'en';
-  if (lang === 'en') return;
+  if (lang === 'en' || !text.trim() || _isTranslating) return;
 
-  const textarea = document.getElementById('scanInput');
-  const text = textarea.value.trim();
-  if (!text) { showToast('Please type a message first', 'error'); return; }
+  // Don't re-translate what we already translated
+  if (text.trim() === _lastTranslatedText) return;
 
-  const btn = document.getElementById('translateBtn');
-  const hint = document.getElementById('translateHint');
-  const origBtnText = btn.innerHTML;
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Translating...';
-  hint.textContent = '';
+  _isTranslating = true;
+  setTranslateStatus('translating');
 
   const targetLang = LANG_CODES_MYMEMORY[lang] || lang;
 
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.trim())}&langpair=en|${targetLang}`;
     const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
     const data = await resp.json();
 
     if (data.responseStatus === 200 && data.responseData && data.responseData.translatedText) {
-      textarea.value = data.responseData.translatedText;
-      hint.textContent = '✓ Translated from English';
-      hint.style.color = 'var(--teal)';
-      showToast('Message translated to ' + LANG_NAMES[lang], 'success');
+      const translated = data.responseData.translatedText;
+      // Only update if textarea still has the same English text (user didn't change it)
+      const textarea = document.getElementById('scanInput');
+      if (textarea.value.trim() === text.trim()) {
+        _lastTranslatedText = translated;
+        textarea.value = translated;
+        setTranslateStatus('done', 'Translated to ' + LANG_NAMES[lang]);
+        setTimeout(() => setTranslateStatus('idle'), 3000);
+      }
     } else {
-      throw new Error('Translation failed');
+      throw new Error('fail');
     }
   } catch(e) {
-    hint.textContent = '✗ Translation failed — please try again';
-    hint.style.color = '#ef4444';
-    showToast('Translation failed. Please try again.', 'error');
+    setTranslateStatus('error', 'Could not translate — try again');
+    setTimeout(() => setTranslateStatus('idle'), 3000);
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = origBtnText;
-    // Reset hint color after a few seconds
-    setTimeout(() => {
-      hint.style.color = '';
-      hint.textContent = 'Type in English → we\'ll translate it for you';
-    }, 4000);
+    _isTranslating = false;
   }
 }
+
+// Attach auto-translate to textarea input (debounced 1.2s after user stops typing)
+(function() {
+  const textarea = document.getElementById('scanInput');
+  textarea.addEventListener('input', function() {
+    const lang = localStorage.getItem('dovtek_lang') || 'en';
+    if (lang === 'en') return;
+    // Don't trigger if text matches last translation (avoid loops)
+    if (this.value.trim() === _lastTranslatedText) return;
+
+    clearTimeout(_translateTimer);
+    _translateTimer = setTimeout(() => {
+      doAutoTranslate(this.value);
+    }, 1200);
+  });
+})();
 
 function changeLang(lang){
   localStorage.setItem('dovtek_lang',lang);
   applyLanguage(lang);
   updateTranslateBar(lang);
+  _lastTranslatedText = '';  // reset so re-translate is possible
 }
 
 function applyLanguage(lang){
