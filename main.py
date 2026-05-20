@@ -82,6 +82,10 @@ async def serve_dashboard():
 async def serve_checkout():
     return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "checkout.html"))
 
+@app.get("/ai")
+async def serve_ai():
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "ai.html"))
+
 @app.get("/privacy")
 async def serve_privacy():
     return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "privacy.html"))

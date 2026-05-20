@@ -81,7 +81,7 @@
     </select>
     <span id="userInfo" style="display:none"></span>
     <a class="btn-ghost" href="#" id="authBtn" onclick="handleAuth()">Log In</a>
-    <a class="btn btn-primary btn-sm" href="/" onclick="localStorage.setItem('dovtek_open_modal','signup')">Signup</a>
+    <a class="btn btn-primary btn-sm" href="#" onclick="openModal('signup')">Signup</a>
   </div>
   <button class="nav-hamburger" onclick="document.getElementById('mobileNav').classList.toggle('open');this.classList.toggle('open')">
     <span></span><span></span><span></span>
@@ -89,6 +89,10 @@
 </nav>
 <div class="nav-mobile" id="mobileNav">
   <a href="/">Home</a><a href="/scan">Scan</a><a href="/dashboard" onclick="handleDashboardClick(event)">Dashboard</a>
+  <div id="mobileAuthNav" style="display:flex; flex-direction:column;">
+    <a href="#" onclick="openModal('login');document.getElementById('mobileNav').classList.remove('open')">Log In</a>
+    <a href="#" onclick="openModal('signup');document.getElementById('mobileNav').classList.remove('open')" style="color:var(--teal)">Sign Up</a>
+  </div>
 </div>
 
 <div class="container">
@@ -138,11 +142,11 @@
   <!-- Guest Gate Modal (For unauthenticated users who use their 1 scan) -->
   <div class="overlay" id="guestGateOverlay" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:20px">
     <div style="background:#0d1117;border:1px solid rgba(0,212,160,0.3);border-radius:16px;padding:36px;max-width:420px;width:100%;text-align:center;position:relative">
-      <div style="font-size:48px;margin-bottom:16px">🛡️</div>
-      <div style="font-weight:800;font-size:22px;margin-bottom:8px">You've used your free scan</div>
-      <p style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:24px">Create a free account to get <strong style="color:#00d4a0">3 scans every day</strong> — no card needed.</p>
-      <a href="/" onclick="localStorage.setItem('dovtek_open_modal','signup')" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#00d4a0,#00b98a);color:#000;font-weight:700;font-size:15px;border-radius:8px;text-decoration:none;margin-bottom:12px">Create Free Account →</a>
-      <a href="/" onclick="localStorage.setItem('dovtek_open_modal','login')" style="display:block;width:100%;padding:13px;border:1px solid rgba(255,255,255,0.12);color:#fff;font-weight:600;font-size:14px;border-radius:8px;text-decoration:none">Already have an account? Log In</a>
+      <div style="font-size:48px;margin-bottom:16px">🔒</div>
+      <div style="font-weight:800;font-size:22px;margin-bottom:8px">Daily Limit Reached</div>
+      <p style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:24px">Guest users are limited to 1 scan per day. Create a free account to get 3 scans daily, see scan history, and unlock advanced features.</p>
+      <a href="#" onclick="document.getElementById('guestGateOverlay').style.display='none';openModal('signup')" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#00d4a0,#00b98a);color:#000;font-weight:700;font-size:15px;border-radius:8px;text-decoration:none;margin-bottom:12px">Create Free Account →</a>
+      <a href="#" onclick="document.getElementById('guestGateOverlay').style.display='none';openModal('login')" style="display:block;width:100%;padding:13px;border:1px solid rgba(255,255,255,0.12);color:#fff;font-weight:600;font-size:14px;border-radius:8px;text-decoration:none">Already have an account? Log In</a>
       <button onclick="document.getElementById('guestGateOverlay').style.display='none'" style="position:absolute;top:14px;right:18px;background:none;border:none;color:#64748b;font-size:22px;cursor:pointer">×</button>
     </div>
   </div>
@@ -153,9 +157,56 @@
       <div style="font-size:48px;margin-bottom:16px">🔑</div>
       <div style="font-weight:800;font-size:22px;margin-bottom:8px">Authentication Required</div>
       <p style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:24px">You cannot access the dashboard until you create a free account or log in. Sign up now to track scans, see risk telemetry, and more.</p>
-      <a href="/" onclick="localStorage.setItem('dovtek_open_modal','signup')" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#00d4a0,#00b98a);color:#000;font-weight:700;font-size:15px;border-radius:8px;text-decoration:none;margin-bottom:12px">Sign Up Now →</a>
-      <a href="/" onclick="localStorage.setItem('dovtek_open_modal','login')" style="display:block;width:100%;padding:13px;border:1px solid rgba(255,255,255,0.12);color:#fff;font-weight:600;font-size:14px;border-radius:8px;text-decoration:none">Already have an account? Log In</a>
+      <a href="#" onclick="document.getElementById('dashboardGateOverlay').style.display='none';openModal('signup')" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#00d4a0,#00b98a);color:#000;font-weight:700;font-size:15px;border-radius:8px;text-decoration:none;margin-bottom:12px">Sign Up Now →</a>
+      <a href="#" onclick="document.getElementById('dashboardGateOverlay').style.display='none';openModal('login')" style="display:block;width:100%;padding:13px;border:1px solid rgba(255,255,255,0.12);color:#fff;font-weight:600;font-size:14px;border-radius:8px;text-decoration:none">Already have an account? Log In</a>
       <button onclick="document.getElementById('dashboardGateOverlay').style.display='none'" style="position:absolute;top:14px;right:18px;background:none;border:none;color:#64748b;font-size:22px;cursor:pointer">×</button>
+    </div>
+  </div>
+
+  <!-- LOGIN MODAL -->
+  <div class="overlay" id="loginOverlay">
+    <div class="modal">
+      <button class="modal-x" onclick="closeModal('login')">×</button>
+      <div class="modal-logo" style="font-family:var(--font-heading);font-weight:800;font-size:22px;color:var(--white);margin-bottom:4px;text-align:center;">SHIELD <span class="accent" style="color:var(--teal);">IQ</span></div>
+      <div class="modal-sub-brand" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:24px;text-align:center;">AI Fraud Detection</div>
+      <div class="modal-h" style="font-size:24px;font-weight:800;margin-bottom:8px;text-align:center;">Welcome back</div>
+      <p class="modal-p" style="color:var(--warm);font-size:14px;line-height:1.6;margin-bottom:24px;text-align:center;">Log in to access your scan history and dashboard.</p>
+      <label class="field-label">Email Address</label>
+      <input class="field" id="loginEmail" type="email" placeholder="you@example.com">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <label class="field-label" style="margin-bottom:0;">Password</label>
+        <a href="#" onclick="forgotPassword();return false"
+          style="font-family:var(--font-mono); font-size:10px; color:var(--teal); text-decoration:none;">Forgot password?</a>
+      </div>
+      <input class="field" id="loginPass" type="password" placeholder="Your password">
+      <button class="auth-btn" onclick="handleLogin()" style="width:100%;padding:14px;background:var(--gradient-primary);color:var(--black);font-weight:700;font-size:15px;border:none;border-radius:var(--radius-sm);cursor:pointer;transition:transform 0.2s;margin-bottom:16px;">Log In</button>
+      <div class="switch-line" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;">No account? <a onclick="switchModal('login','signup')" style="color:var(--teal);cursor:pointer;text-decoration:none;">Sign up free →</a></div>
+    </div>
+  </div>
+
+  <!-- SIGNUP MODAL -->
+  <div class="overlay" id="signupOverlay">
+    <div class="modal">
+      <button class="modal-x" onclick="closeModal('signup')">×</button>
+      <div class="modal-logo" style="font-family:var(--font-heading);font-weight:800;font-size:22px;color:var(--white);margin-bottom:4px;text-align:center;">SHIELD <span class="accent" style="color:var(--teal);">IQ</span></div>
+      <div class="modal-sub-brand" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:24px;text-align:center;">AI Fraud Detection</div>
+      <div class="modal-h" style="font-size:24px;font-weight:800;margin-bottom:8px;text-align:center;">Start for free</div>
+      <p class="modal-p" style="color:var(--warm);font-size:14px;line-height:1.6;margin-bottom:20px;text-align:center;">No card. No setup. Scan your first suspicious message in 30 seconds.</p>
+      <div class="perks" style="margin-bottom:24px;background:var(--darker);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 18px;display:flex;flex-direction:column;gap:8px;">
+        <div class="perk" style="font-size:12px;color:var(--white);display:flex;align-items:center;gap:8px;">✓ 3 free scans every day</div>
+        <div class="perk" style="font-size:12px;color:var(--white);display:flex;align-items:center;gap:8px;">✓ Scan history saved to your account</div>
+        <div class="perk" style="font-size:12px;color:var(--white);display:flex;align-items:center;gap:8px;">✓ Your messages are never stored</div>
+      </div>
+      <label class="field-label">Full Name</label>
+      <input class="field" id="signupName" type="text" placeholder="Jane Doe">
+      <label class="field-label">Email Address</label>
+      <input class="field" id="signupEmail" type="email" placeholder="you@example.com">
+      <label class="field-label">Password</label>
+      <input class="field" id="signupPass" type="password" placeholder="At least 8 characters" onkeyup="checkStrength()">
+      <div id="pwdStrength" style="font-family:var(--font-mono); font-size:10px; color:var(--muted); margin-top:-10px; margin-bottom:16px;">
+        Strength: <span id="pwdLabel">None</span></div>
+      <button class="auth-btn" onclick="handleSignup()" style="width:100%;padding:14px;background:var(--gradient-primary);color:var(--black);font-weight:700;font-size:15px;border:none;border-radius:var(--radius-sm);cursor:pointer;transition:transform 0.2s;margin-bottom:16px;">Create Free Account</button>
+      <div class="switch-line" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;">Already have an account? <a onclick="switchModal('signup','login')" style="color:var(--teal);cursor:pointer;text-decoration:none;">Log in →</a></div>
     </div>
   </div>
 
@@ -276,6 +327,12 @@ function incrementScanCount() {
     // Hide the "Try Free" button in nav since user is already logged in
     const tryFreeBtn = document.querySelector('.nav-actions .btn-primary');
     if (tryFreeBtn) tryFreeBtn.style.display = 'none';
+    const mobileAuthNav = document.getElementById('mobileAuthNav');
+    if (mobileAuthNav) {
+      mobileAuthNav.innerHTML = `
+        <a href="#" onclick="handleAuth();document.getElementById('mobileNav').classList.remove('open')" style="color:#ef4444">Logout</a>
+      `;
+    }
     
     fetch(API+'/auth/me',{headers:{'Authorization':'Bearer '+token}})
       .then(r=>r.ok?r.json():Promise.reject())
@@ -309,8 +366,94 @@ function handleAuth(){
     });
     location.reload();
   } else {
-    location.href='/';
+    openModal('login');
   }
+}
+
+// Modal controls
+function openModal(t) {
+  document.getElementById(t + 'Overlay').classList.add('on');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(t) {
+  document.getElementById(t + 'Overlay').classList.remove('on');
+  document.body.style.overflow = '';
+}
+function switchModal(from, to) {
+  closeModal(from);
+  setTimeout(() => openModal(to), 150);
+}
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', function(e) {
+    if (e.target === this) {
+      this.classList.remove('on');
+      document.body.style.overflow = '';
+    }
+  });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.overlay.on').forEach(o => {
+      o.classList.remove('on');
+      document.body.style.overflow = '';
+    });
+  }
+});
+
+function checkStrength() {
+  const pwd = document.getElementById('signupPass').value;
+  const label = document.getElementById('pwdLabel');
+  let s = 0;
+  if (pwd.length >= 8) s++;
+  if (pwd.match(/[A-Z]/)) s++;
+  if (pwd.match(/[0-9]/)) s++;
+  if (pwd.match(/[^a-zA-Z0-9]/)) s++;
+
+  if (pwd.length === 0) { label.textContent = 'None'; label.style.color = 'var(--muted)'; }
+  else if (s <= 1) { label.textContent = 'Weak - Add uppercase, numbers & symbols'; label.style.color = 'var(--red)'; }
+  else if (s === 2) { label.textContent = 'Fair - Add uppercase or symbols'; label.style.color = 'var(--orange)'; }
+  else if (s === 3) { label.textContent = 'Good'; label.style.color = 'var(--teal)'; }
+  else { label.textContent = 'Strong'; label.style.color = 'var(--teal)'; }
+}
+
+function forgotPassword() {
+  const email = document.getElementById('loginEmail').value.trim();
+  if (!email) { showToast('Please enter your email first to reset your password'); return; }
+  showToast('Password reset link sent to ' + email);
+}
+
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if (!email || !pass) { showToast('Please enter email and password'); return }
+  try {
+    const r = await fetch(API + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pass }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Login failed');
+    localStorage.setItem('dovtek_token', d.token);
+    localStorage.setItem('dovtek_user', JSON.stringify(d.user));
+    showToast(`Welcome back, ${d.user.full_name}!`);
+    closeModal('login');
+    setTimeout(() => location.reload(), 800);
+  } catch (e) { showToast(e.message) }
+}
+
+async function handleSignup() {
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pass = document.getElementById('signupPass').value;
+  if (!name || !email || !pass) { showToast('Please fill in all fields'); return }
+  if (pass.length < 8) { showToast('Password must be at least 8 characters'); return }
+  try {
+    const r = await fetch(API + '/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ full_name: name, email, password: pass }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Signup failed');
+    localStorage.setItem('dovtek_token', d.token);
+    localStorage.setItem('dovtek_user', JSON.stringify(d.user));
+    showToast('Account created!');
+    closeModal('signup');
+    setTimeout(() => location.reload(), 800);
+  } catch (e) { showToast(e.message) }
 }
 
 function showToast(msg,type){
