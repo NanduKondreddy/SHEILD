@@ -70,7 +70,7 @@
   <ul class="nav-links">
     <li><a href="/">Home</a></li>
     <li><a href="/scan" class="active">Scan</a></li>
-    <li><a href="/dashboard">Dashboard</a></li>
+    <li><a href="/dashboard" onclick="handleDashboardClick(event)">Dashboard</a></li>
   </ul>
   <div class="nav-actions">
     <select class="lang-select" id="langSelect" onchange="changeLang(this.value)">
@@ -88,7 +88,7 @@
   </button>
 </nav>
 <div class="nav-mobile" id="mobileNav">
-  <a href="/">Home</a><a href="/scan">Scan</a><a href="/dashboard">Dashboard</a>
+  <a href="/">Home</a><a href="/scan">Scan</a><a href="/dashboard" onclick="handleDashboardClick(event)">Dashboard</a>
 </div>
 
 <div class="container">
@@ -127,7 +127,7 @@
       <button class="btn-scan" id="scanBtn" onclick="performScan()">Analyze Message</button>
     </div>
     <div class="user-bar" id="userBar">
-      <span id="scanCount">3 free scans per day</span> · <span>No message stored</span> · <a href="/dashboard">View History</a>
+      <span id="scanCount">3 free scans per day</span> · <span>No message stored</span> · <a href="/dashboard" onclick="handleDashboardClick(event)">View History</a>
     </div>
     <div class="loc-bar" id="locBar" style="padding: 8px 24px; font-size: 11px; background: transparent; border-top: none; color: var(--muted); display:flex; justify-content:center;">
       <span id="locCountry">detecting...</span> &nbsp;&bull;&nbsp; <span id="locCurrency">$</span>
@@ -144,6 +144,18 @@
       <a href="/" onclick="localStorage.setItem('dovtek_open_modal','signup')" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#00d4a0,#00b98a);color:#000;font-weight:700;font-size:15px;border-radius:8px;text-decoration:none;margin-bottom:12px">Create Free Account →</a>
       <a href="/" onclick="localStorage.setItem('dovtek_open_modal','login')" style="display:block;width:100%;padding:13px;border:1px solid rgba(255,255,255,0.12);color:#fff;font-weight:600;font-size:14px;border-radius:8px;text-decoration:none">Already have an account? Log In</a>
       <button onclick="document.getElementById('guestGateOverlay').style.display='none'" style="position:absolute;top:14px;right:18px;background:none;border:none;color:#64748b;font-size:22px;cursor:pointer">×</button>
+    </div>
+  </div>
+
+  <!-- Dashboard Gate Modal (For guest users trying to access dashboard) -->
+  <div class="overlay" id="dashboardGateOverlay" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:#0d1117;border:1px solid rgba(0,212,160,0.3);border-radius:16px;padding:36px;max-width:420px;width:100%;text-align:center;position:relative">
+      <div style="font-size:48px;margin-bottom:16px">🔑</div>
+      <div style="font-weight:800;font-size:22px;margin-bottom:8px">Authentication Required</div>
+      <p style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:24px">You cannot access the dashboard until you create a free account or log in. Sign up now to track scans, see risk telemetry, and more.</p>
+      <a href="/" onclick="localStorage.setItem('dovtek_open_modal','signup')" style="display:block;width:100%;padding:14px;background:linear-gradient(135deg,#00d4a0,#00b98a);color:#000;font-weight:700;font-size:15px;border-radius:8px;text-decoration:none;margin-bottom:12px">Sign Up Now →</a>
+      <a href="/" onclick="localStorage.setItem('dovtek_open_modal','login')" style="display:block;width:100%;padding:13px;border:1px solid rgba(255,255,255,0.12);color:#fff;font-weight:600;font-size:14px;border-radius:8px;text-decoration:none">Already have an account? Log In</a>
+      <button onclick="document.getElementById('dashboardGateOverlay').style.display='none'" style="position:absolute;top:14px;right:18px;background:none;border:none;color:#64748b;font-size:22px;cursor:pointer">×</button>
     </div>
   </div>
 
@@ -213,6 +225,13 @@
 const API = '';
 let mode = 'text';
 const token = localStorage.getItem('dovtek_token');
+
+function handleDashboardClick(e) {
+  if (!token) {
+    e.preventDefault();
+    document.getElementById('dashboardGateOverlay').style.display = 'flex';
+  }
+}
 
 // ── Scan Quota Helpers ──────────────────────────────────────────────────────
 const GUEST_LIMIT = 1;
