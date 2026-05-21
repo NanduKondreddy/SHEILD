@@ -11,12 +11,17 @@ load_dotenv()
 from database import engine
 import db_models
 from routers import auth_router, scan_router
+from routers import audit_router, webhook_router, community_router
 from prompts import DEMO_SCENARIOS
 
 # Create all DB tables on startup if they don't exist
 db_models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Dovtek API", version="2.0.0")
+app = FastAPI(
+    title="ShieldIQ API",
+    version="3.0.0",
+    description="Enterprise-grade AI fraud detection platform",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,6 +35,11 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(scan_router.router)
 
+# Enterprise routers
+app.include_router(audit_router.router)
+app.include_router(webhook_router.router)
+app.include_router(community_router.router)
+
 
 # ── Existing Endpoints (unchanged) ───────────────────────────────────────────
 @app.get("/demo/{scenario_id}")
@@ -41,7 +51,23 @@ async def get_demo(scenario_id: str):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "version": "3.0.0", "enterprise": True}
+
+@app.get("/version")
+async def version():
+    return {
+        "version": "3.0.0",
+        "platform": "ShieldIQ Enterprise",
+        "features": [
+            "two_pass_analysis", "nigerian_context_injection",
+            "multi_language_support", "multi_model_fallback",
+            "output_validation", "audit_trail", "pattern_intelligence",
+            "api_key_management", "webhook_system", "community_submissions",
+            "intelligence_reports"
+        ],
+        "supported_languages": ["en", "pidgin", "yoruba", "hausa", "igbo"],
+        "providers": ["gemini", "anthropic", "openai"],
+    }
 
 
 # ── Serve Frontend Static Files ──────────────────────────────────────────────
@@ -59,18 +85,54 @@ if os.path.isdir(os.path.join(FRONTEND_DIR, "assets")):
 
 
 # ── HTML Page Routes ─────────────────────────────────────────────────────────
+class NoCacheFileResponse(FileResponse):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        self.headers["Pragma"] = "no-cache"
+        self.headers["Expires"] = "0"
+
 @app.get("/")
 async def serve_home():
-    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
 @app.get("/scan")
 async def serve_scan_page():
-    return FileResponse(os.path.join(FRONTEND_DIR, "scan.html"))
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "scan.html"))
 
 @app.get("/dashboard")
 async def serve_dashboard():
-    return FileResponse(os.path.join(FRONTEND_DIR, "dashboard.html"))
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "dashboard.html"))
+
+@app.get("/checkout")
+async def serve_checkout():
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "checkout.html"))
+
+@app.get("/ai")
+async def serve_ai():
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "ai.html"))
 
 @app.get("/privacy")
 async def serve_privacy():
-    return FileResponse(os.path.join(FRONTEND_DIR, "privacy.html"))
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "privacy.html"))
+
+@app.get("/security")
+async def serve_security():
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "security.html"))
+
+@app.get("/terms")
+async def serve_terms():
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "terms.html"))
+
+@app.get("/about")
+async def serve_about():
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "about.html"))
+
+@app.get("/contact")
+async def serve_contact():
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "contact.html"))
+
+# ── Enterprise Pages ─────────────────────────────────────────────────────────
+@app.get("/admin")
+async def serve_admin():
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "admin.html"))
