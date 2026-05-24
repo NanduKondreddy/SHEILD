@@ -976,6 +976,22 @@
         setTimeout(() => location.href = '/scan', 800);
       } catch (e) { showToast(e.message) }
     }
+
+    // Attach Enter key event listeners for modal form inputs
+    document.addEventListener("DOMContentLoaded", () => {
+      const loginEmail = document.getElementById('loginEmail');
+      const loginPass = document.getElementById('loginPass');
+      if (loginEmail) loginEmail.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+      if (loginPass) loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+
+      const signupName = document.getElementById('signupName');
+      const signupEmail = document.getElementById('signupEmail');
+      const signupPass = document.getElementById('signupPass');
+      if (signupName) signupName.addEventListener('keydown', e => { if (e.key === 'Enter') handleSignup(); });
+      if (signupEmail) signupEmail.addEventListener('keydown', e => { if (e.key === 'Enter') handleSignup(); });
+      if (signupPass) signupPass.addEventListener('keydown', e => { if (e.key === 'Enter') handleSignup(); });
+    });
+
     // ── Geolocation + Currency Detection ──
     const CURRENCY_MAP = {
       'IN': '₹', 'US': '$', 'GB': '£', 'NG': '₦', 'EU': '€', 'DE': '€', 'FR': '€', 'IT': '€', 'ES': '€',

@@ -22,6 +22,14 @@ document.getElementById("saveSettings").onclick = () => {
   });
 };
 
+const saveSettingsBtn = document.getElementById("saveSettings");
+apiInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") saveSettingsBtn.click();
+});
+tokenInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") saveSettingsBtn.click();
+});
+
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   const url = tabs[0]?.url || "";
   setState("waState", url.includes("web.whatsapp.com"));
