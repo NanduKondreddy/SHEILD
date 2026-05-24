@@ -40,7 +40,10 @@ def main():
                             output = txt
                     
                     if text_input and output:
-                        training_data.append((text_input, output))
+                        training_data.append({
+                            "text_input": text_input,
+                            "output": output
+                        })
     except Exception as e:
         print(f"[-] Error loading dataset: {e}")
         return
