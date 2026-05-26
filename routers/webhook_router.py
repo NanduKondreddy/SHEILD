@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhook", tags=["Webhook"])
 
 # Persistent registry file path
-WEBHOOK_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data_store", "keys")
+WEBHOOK_DIR = os.environ.get("SHIELDIQ_DATA_DIR") or os.path.join(os.path.dirname(os.path.dirname(__file__)), "data_store", "keys")
 os.makedirs(WEBHOOK_DIR, exist_ok=True)
 WEBHOOK_FILE = os.path.join(WEBHOOK_DIR, "webhooks.json")
 

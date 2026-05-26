@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 logger = logging.getLogger(__name__)
-KEY_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data_store", "keys")
+KEY_DIR = os.environ.get("SHIELDIQ_DATA_DIR") or os.path.join(os.path.dirname(os.path.dirname(__file__)), "data_store", "keys")
 os.makedirs(KEY_DIR, exist_ok=True)
 KEY_FILE = os.path.join(KEY_DIR, "api_keys.json")
 
