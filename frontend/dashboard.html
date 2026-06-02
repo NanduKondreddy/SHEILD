@@ -62,6 +62,14 @@
 .upgrade-dismiss{font-family:var(--font-mono);font-size:11px;color:#475569;cursor:pointer;text-decoration:underline;background:none;border:none}
 .lang-select{background:var(--card);border:1px solid var(--border);color:var(--white);font-family:var(--font-mono);font-size:11px;padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;outline:none;letter-spacing:0.04em;margin-right:12px}
 .lang-select:focus{border-color:var(--teal)}
+@keyframes status-pulse-anim {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 212, 160, 0.5); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(0, 212, 160, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 212, 160, 0); }
+}
+.status-pulse.active {
+  animation: status-pulse-anim 2s infinite;
+}
 </style>
 </head>
 <body>
@@ -84,7 +92,10 @@
   <button class="nav-hamburger" onclick="document.getElementById('mobileNav').classList.toggle('open');this.classList.toggle('open')"><span></span><span></span><span></span></button>
 </nav>
 <div class="nav-mobile" id="mobileNav">
-  <a href="/" id="mNavHome">Home</a><a href="/scan" id="mNavScan">Scan</a><a href="/dashboard" id="mNavDashboard">Dashboard</a><a href="#" onclick="logout()" id="mNavLogout">Logout</a>
+  <a href="/" id="mNavHome">Home</a>
+  <a href="/scan" id="mNavScan">Scan</a>
+  <a href="/dashboard" id="mNavDashboard">Dashboard</a>
+  <a href="#" onclick="logout()" id="mNavLogout">Logout</a>
 </div>
 
 <div class="container">
@@ -92,13 +103,48 @@
   <div class="dash-sub" id="dashSub">Loading your scan history...</div>
 
   <!-- Extension Integration Widget -->
-  <div class="extension-widget" id="extWidget" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px 20px;margin-bottom:20px;display:none;flex-direction:column;gap:8px;">
-    <div style="font-weight:700;font-size:14px;color:var(--white);display:flex;align-items:center;gap:8px;">🛡️ Shield Plus Chrome Extension</div>
-    <div style="font-size:12px;color:var(--muted)">Use the extension for automatic background protection on WhatsApp and Gmail. Paste this auth token into the extension popup:</div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <input type="password" id="extTokenVal" readonly style="flex:1;background:var(--darker);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--warm);padding:8px 12px;font-family:var(--font-mono);font-size:11px;" value="">
-      <button onclick="toggleTokenVisibility()" class="btn btn-outline btn-sm" style="padding:8px 12px;font-size:11px;cursor:pointer;">Show</button>
-      <button onclick="copyExtToken()" class="btn btn-primary btn-sm" style="padding:8px 12px;font-size:11px;cursor:pointer;background:var(--teal);color:var(--black)">Copy</button>
+  <div class="extension-widget" id="extWidget" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:24px;margin-bottom:20px;display:none;flex-direction:column;gap:16px;box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;border-bottom:1px solid var(--border);padding-bottom:16px;">
+      <div style="font-weight:800;font-size:16px;color:var(--white);display:flex;align-items:center;gap:8px;">
+        <span style="color:var(--teal);font-size:20px;">🛡️</span> Shield Plus Chrome Extension
+      </div>
+      <div id="extStatus" style="font-family:var(--font-mono);font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;">
+        <span class="status-pulse" style="width:8px;height:8px;border-radius:50%;background:#ff4757;display:inline-block;"></span>
+        <span class="status-text" style="color:#ff4757;">Not detected in browser</span>
+      </div>
+    </div>
+    
+    <div style="font-size:13px;line-height:1.6;color:var(--muted)">
+      Get automatic background protection for WhatsApp, Gmail, and social networks. Secure your conversations silently in real-time.
+    </div>
+
+    <div id="extActionButtons" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:4px;">
+      <!-- Controls dynamically loaded by JavaScript based on connection status -->
+    </div>
+
+    <!-- Instructions Panel (Collapsible) -->
+    <div id="setupInstructions" style="display:none;background:var(--darker);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-top:8px;">
+      <h4 style="margin:0 0 12px 0;font-size:13px;font-family:var(--font-mono);color:var(--white);text-transform:uppercase;letter-spacing:0.05em;">Easy Setup Guide:</h4>
+      <ol style="margin:0;padding-left:20px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:10px;line-height:1.5;">
+        <li>Click the <strong style="color:var(--white)">Download Chrome Extension</strong> button above to save the package (<code>shieldiq-extension.zip</code>) to your device.</li>
+        <li>Locate the downloaded ZIP file and <strong style="color:var(--white)">extract it</strong> to a folder.</li>
+        <li>Open a new browser tab and navigate to <code style="color:var(--teal)">chrome://extensions</code> (or open your browser menu, go to Extensions -> Manage Extensions).</li>
+        <li>Turn on the <strong style="color:var(--white)">Developer mode</strong> switch (usually in the top-right corner).</li>
+        <li>Click the <strong style="color:var(--white)">Load unpacked</strong> button (usually in the top-left) and select the extracted extension folder.</li>
+        <li><strong>Done!</strong> The extension will automatically link to your subscription and secure your browser immediately.</li>
+      </ol>
+    </div>
+
+    <!-- Fallback Manual Token (for advanced users) -->
+    <div style="font-size:11px;color:var(--dim);margin-top:4px;border-top:1px dashed var(--border);padding-top:12px;display:flex;flex-direction:column;gap:6px;">
+      <div style="cursor:pointer;user-select:none;" onclick="const s = document.getElementById('manualTokenSection'); s.style.display = s.style.display === 'none' ? 'flex' : 'none'">
+        🔑 Can't log in automatically? <span style="text-decoration:underline;">Click to show manual authentication token.</span>
+      </div>
+      <div id="manualTokenSection" style="display:none;gap:8px;align-items:center;margin-top:4px;">
+        <input type="password" id="extTokenVal" readonly style="flex:1;background:var(--darker);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--warm);padding:6px 10px;font-family:var(--font-mono);font-size:10px;" value="">
+        <button onclick="toggleTokenVisibility()" class="btn btn-outline btn-sm" style="padding:6px 10px;font-size:10px;cursor:pointer;">Show</button>
+        <button onclick="copyExtToken()" class="btn btn-primary btn-sm" style="padding:6px 10px;font-size:10px;cursor:pointer;background:var(--teal);color:var(--black)">Copy</button>
+      </div>
     </div>
   </div>
 
@@ -107,7 +153,7 @@
     <span class="quota-label" id="quotaLabel">Today's Scans</span>
     <div class="quota-track"><div class="quota-fill" id="quotaFill" style="width:100%"></div></div>
     <span class="quota-text ok" id="quotaText">3 / 3 left</span>
-    <a href="#" class="quota-upgrade" id="quotaUpgradeBtn" onclick="document.getElementById('upgradeOverlay').classList.add('on'); return false;" style="display:none">⚡ Upgrade</a>
+    <a href="/plans" class="quota-upgrade" id="quotaUpgradeBtn" style="display:none">⚡ Upgrade Plan</a>
   </div>
 
   <div class="dash-cards">
@@ -255,11 +301,10 @@ function renderQuota(userPlan) {
 
   if (rem === 0) {
     text.textContent = T.quotaEmpty;
-    upgradeBtn.style.display = 'inline-block';
   } else {
     text.textContent = T.quotaLeft.replace('{n}', rem);
-    upgradeBtn.style.display = 'none';
   }
+  upgradeBtn.style.display = 'inline-block';
 }
 
 function exportHistory() {
@@ -370,6 +415,133 @@ function copyExtToken() {
   navigator.clipboard.writeText(input.value);
   showToast('Copied token to clipboard!');
 }
+
+function downloadExtensionZip() {
+  const headers = { 'Authorization': 'Bearer ' + token };
+  fetch(API + '/auth/download/extension', { headers })
+    .then(response => {
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('Upgrade required: Extension download is only available on Shield Plus and Enterprise plans.');
+        }
+        throw new Error('Failed to download extension package.');
+      }
+      return response.blob();
+    })
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'shieldiq-extension.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showToast('Downloading shieldiq-extension.zip!');
+    })
+    .catch(err => {
+      showToast(err.message);
+    });
+}
+
+function toggleInstructions() {
+  const panel = document.getElementById('setupInstructions');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function checkExtensionStatus() {
+  const badge = document.getElementById('extStatus');
+  if (!badge) return;
+  const pulse = badge.querySelector('.status-pulse');
+  const txt = badge.querySelector('.status-text');
+  
+  const isInstalled = document.body.hasAttribute('data-shieldiq-extension-installed');
+  const isActive = document.body.hasAttribute('data-shieldiq-extension-active');
+  
+  if (isInstalled) {
+    if (isActive) {
+      pulse.style.background = 'var(--teal)';
+      pulse.classList.add('active');
+      txt.style.color = 'var(--teal)';
+      txt.textContent = 'Active & Connected';
+    } else {
+      pulse.style.background = '#f59e0b';
+      pulse.classList.add('active');
+      txt.style.color = '#f59e0b';
+      txt.textContent = 'Connected (Awaiting Activation)';
+    }
+  } else {
+    pulse.style.background = '#ff4757';
+    pulse.classList.remove('active');
+    txt.style.color = '#ff4757';
+    txt.textContent = 'Not detected in browser';
+  }
+
+  renderExtensionControls();
+}
+
+function renderExtensionControls() {
+  const container = document.getElementById('extActionButtons');
+  if (!container) return;
+
+  const isInstalled = document.body.hasAttribute('data-shieldiq-extension-installed');
+  const isActive = document.body.hasAttribute('data-shieldiq-extension-active');
+
+  let html = '';
+
+  if (!isInstalled) {
+    html = `
+      <button onclick="downloadExtensionZip()" class="btn" style="display:inline-flex;align-items:center;gap:8px;background:var(--teal);color:var(--black);font-weight:700;padding:10px 18px;border-radius:var(--radius-sm);cursor:pointer;border:none;font-family:inherit;font-size:13px;">
+        📥 Download Chrome Extension
+      </button>
+      <button onclick="toggleInstructions()" class="btn btn-outline" style="padding:10px 18px;border-radius:var(--radius-sm);cursor:pointer;color:var(--white);background:none;border:1px solid var(--border);font-family:inherit;font-size:13px;">
+        Setup Instructions
+      </button>
+    `;
+  } else if (!isActive) {
+    html = `
+      <button onclick="requestExtensionActivation()" class="btn" style="display:inline-flex;align-items:center;gap:8px;background:#f59e0b;color:var(--black);font-weight:700;padding:10px 18px;border-radius:var(--radius-sm);cursor:pointer;border:none;font-family:inherit;font-size:13px;">
+        ⚡ Activate Protection
+      </button>
+      <button onclick="downloadExtensionZip()" class="btn btn-outline" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:var(--radius-sm);cursor:pointer;color:var(--white);background:none;border:1px solid var(--border);font-family:inherit;font-size:13px;">
+        📥 Re-download Extension
+      </button>
+      <button onclick="toggleInstructions()" class="btn btn-outline" style="padding:10px 18px;border-radius:var(--radius-sm);cursor:pointer;color:var(--white);background:none;border:1px solid var(--border);font-family:inherit;font-size:13px;">
+        Setup Instructions
+      </button>
+    `;
+  } else {
+    html = `
+      <button onclick="pauseExtensionProtection()" class="btn" style="display:inline-flex;align-items:center;gap:8px;background:#ef4444;color:var(--white);font-weight:700;padding:10px 18px;border-radius:var(--radius-sm);cursor:pointer;border:none;font-family:inherit;font-size:13px;">
+        ⏸️ Pause Protection
+      </button>
+      <span style="color:var(--teal);font-size:12px;font-family:var(--font-mono);font-weight:600;margin-left:8px;">✓ Real-time protection is running</span>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+function requestExtensionActivation() {
+  const confirmed = confirm("Activate ShieldIQ Automatic Protection?\n\nThis will grant the extension permission to secure your incoming messages on WhatsApp, Gmail, and social websites.");
+  if (confirmed) {
+    window.dispatchEvent(new CustomEvent('shieldiq_activate_protection'));
+    showToast("Real-time scan protection activated!");
+    setTimeout(checkExtensionStatus, 100);
+  }
+}
+
+function pauseExtensionProtection() {
+  const confirmed = confirm("Are you sure you want to pause real-time protection?\n\nYour chats and emails will not be checked for fraud alerts until you enable it again.");
+  if (confirmed) {
+    window.dispatchEvent(new CustomEvent('shieldiq_deactivate_protection'));
+    showToast("Real-time scan protection paused.");
+    setTimeout(checkExtensionStatus, 100);
+  }
+}
+
+// Start checking extension status
+setInterval(checkExtensionStatus, 1500);
 
 renderQuota();
 loadDashboard();

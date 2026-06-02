@@ -231,7 +231,8 @@
           <span style="font-family:var(--font-mono);font-size:13px;color:var(--teal);font-weight:700">$9.99 / mo</span>
         </a>
       </div>
-      <button onclick="document.getElementById('upgradeOverlay').style.display='none'" style="font-family:var(--font-mono);font-size:11px;color:#475569;cursor:pointer;text-decoration:underline;background:none;border:none">Maybe later — I'll wait until tomorrow</button>
+      <a href="/plans" style="color:var(--teal);font-size:12px;font-family:var(--font-mono);text-decoration:underline;margin-bottom:20px;display:inline-block;">View full plan details & features →</a>
+      <button onclick="document.getElementById('upgradeOverlay').style.display='none'" style="font-family:var(--font-mono);font-size:11px;color:#475569;cursor:pointer;text-decoration:underline;background:none;border:none;display:block;margin:0 auto 10px;">Maybe later — I'll wait until tomorrow</button>
       <button onclick="document.getElementById('upgradeOverlay').style.display='none'" style="position:absolute;top:14px;right:18px;background:none;border:none;color:#64748b;font-size:22px;cursor:pointer">×</button>
     </div>
   </div>
@@ -358,6 +359,7 @@ function incrementScanCount() {
     // Hide the "Try Free" button in nav since user is already logged in
     const tryFreeBtn = document.querySelector('.nav-actions .btn-primary');
     if (tryFreeBtn) tryFreeBtn.style.display = 'none';
+    
     const mobileAuthNav = document.getElementById('mobileAuthNav');
     if (mobileAuthNav) {
       mobileAuthNav.innerHTML = `

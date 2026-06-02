@@ -76,4 +76,49 @@ def upgrade(plan: str, db: Session = Depends(get_db), current_user: db_models.Us
         plan=current_user.plan,
         created_at=current_user.created_at,
     )
+
+
+@router.get("/download/extension")
+def download_extension(
+    current_user: db_models.User = Depends(get_current_user),
+):
+    """Bundles the 'extension' directory on the server into a ZIP file and sends it.
+    Only users with 'plus' or 'enterprise' plans can download it.
+    """
+    import io
+    import os
+    import zipfile
+    from fastapi.responses import StreamingResponse
+
+    if current_user.plan not in ["plus", "enterprise"]:
+        raise HTTPException(
+            status_code=403,
+            detail="The Chrome Extension is only available for Shield Plus or Enterprise plans."
+        )
+
+    # Path to extension is backend_root/extension
+    # Since this file is in backend_root/routers/auth_router.py, go up one level
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    extension_path = os.path.join(base_dir, "extension")
+
+    if not os.path.exists(extension_path) or not os.path.isdir(extension_path):
+        raise HTTPException(
+            status_code=500,
+            detail="Extension source directory not found on the server."
+        )
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for root, dirs, files in os.walk(extension_path):
+            for file in files:
+                file_full_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_full_path, extension_path)
+                zip_file.write(file_full_path, rel_path)
+
+    zip_buffer.seek(0)
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=shieldiq-extension.zip"}
+    )
  

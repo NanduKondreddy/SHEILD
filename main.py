@@ -140,6 +140,10 @@ async def serve_scan_page():
 async def serve_dashboard():
     return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "dashboard.html"))
 
+@app.get("/plans")
+async def serve_plans():
+    return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "plans.html"))
+
 @app.get("/checkout")
 async def serve_checkout():
     return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "checkout.html"))

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShieldIQ — Plans & Pricing</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/global.css">
+  <style>
+    .plans-container {
+      max-width: 1200px;
+      margin: 100px auto 80px;
+      padding: 0 24px;
+    }
+    .plans-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    .plans-title {
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+      color: var(--white);
+    }
+    .plans-subtitle {
+      font-size: 16px;
+      color: var(--warm);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 40px;
+    }
+    .feat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 32px 28px;
+      border-radius: var(--radius-md);
+      transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .feat:hover {
+      border-color: rgba(0, 212, 160, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 212, 160, 0.05);
+    }
+    .feat-title {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    .feat-text {
+      font-size: 13px;
+      color: var(--warm);
+      line-height: 1.8;
+    }
+    .loc-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--warm);
+      background: rgba(0, 212, 160, 0.06);
+      border-bottom: 1px solid var(--border);
+      position: fixed;
+      top: 68px;
+      left: 0;
+      right: 0;
+      z-index: 999;
+    }
+    .loc-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--teal);
+      color: var(--black);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.06em;
+    }
+    .loc-banner .loc-currency {
+      color: var(--teal);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .back-dash {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--teal);
+      text-decoration: none;
+      font-size: 14px;
+      font-family: var(--font-mono);
+      margin-bottom: 24px;
+    }
+    .back-dash:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a class="nav-brand" href="/"><span class="nav-brand-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><circle cx="12" cy="11" r="3" fill="currentColor"></circle></svg></span>SHIELD <span class="accent">IQ</span></a>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/scan">Scanner</a></li>
+      <li><a href="/dashboard">Dashboard</a></li>
+    </ul>
+    <div class="nav-actions">
+      <select class="lang-select" id="langSelect" onchange="changeLang(this.value)">
+        <option value="en">English</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="hi">हिन्दी</option>
+      </select>
+      <a class="btn-ghost" href="#" onclick="logout()" id="navLogout">Logout</a>
+    </div>
+  </nav>
+
+  <!-- LOCATION BANNER -->
+  <div class="loc-banner" id="locBanner" style="display:none;">
+    <span class="loc-badge" id="locBadge">US</span>
+    <span>Detected: <strong id="locCountry">United States</strong></span>
+    <span>·</span>
+    <span>Prices shown in <span class="loc-currency" id="locCurrency">$</span></span>
+  </div>
+
+  <div class="plans-container">
+    <a href="/dashboard" class="back-dash">← Back to Dashboard</a>
+    
+    <div class="plans-header">
+      <div class="plans-title">Protection that scales with your needs</div>
+      <div class="plans-subtitle">Upgrade to Shield Plus for automatic protection in WhatsApp and Gmail, or choose the plan that best fits your workflow.</div>
+    </div>
+
+    <div class="features-grid">
+      <!-- 1. FREE TIER -->
+      <div class="feat">
+        <div class="feat-title" style="font-size:24px; color:var(--white);">Free Web Scanner</div>
+        <div style="font-family:var(--font-mono); color:var(--muted); font-size:12px; margin-bottom:20px; letter-spacing:0.05em">Always Free</div>
+        <p class="feat-text" style="margin-bottom:20px; flex-grow:1;">Manual protection when you need a second opinion.</p>
+        <ul style="list-style:none; padding:0; margin:0 0 24px 0; font-size:13px; color:var(--warm); line-height:2.0;">
+          <li>✓ 3 free manual scans per day</li>
+          <li>✓ Paste WhatsApp, SMS, or Emails</li>
+          <li>✓ Upload Screenshots & Documents</li>
+          <li>✓ Basic Scan History</li>
+        </ul>
+        <a class="btn btn-outline" style="width:100%; text-align:center;" href="/scan">Try Free Now</a>
+      </div>
+
+      <!-- 2. PRO TIER -->
+      <div class="feat">
+        <div class="feat-title" style="font-size:24px; color:var(--white);">SHIELD IQ Pro</div>
+        <div style="font-family:var(--font-mono); color:var(--muted); font-size:12px; margin-bottom:20px; letter-spacing:0.05em"><span id="dynamicPricePro">$3.99</span> / month</div>
+        <p class="feat-text" style="margin-bottom:20px; flex-grow:1;">Unlimited manual protection without installing an app.</p>
+        <ul style="list-style:none; padding:0; margin:0 0 24px 0; font-size:13px; color:var(--warm); line-height:2.0;">
+          <li>✓ <strong>Unlimited</strong> manual scans</li>
+          <li>✓ Priority AI Processing</li>
+          <li>✓ Advanced PDF & Document scanning</li>
+          <li>✓ Full Scan History & Export</li>
+        </ul>
+        <a class="btn btn-outline" style="width:100%; text-align:center;" id="proBtn" href="/checkout?plan=pro">Upgrade to Pro</a>
+      </div>
+
+      <!-- 3. PLUS TIER (RECOMMENDED) -->
+      <div class="feat" style="background:var(--card-hover); border-color:var(--teal); position:relative; overflow:hidden;">
+        <div style="position:absolute; top:12px; right:12px; background:var(--teal); color:var(--black); font-size:10px; font-weight:800; padding:4px 10px; border-radius:12px; letter-spacing:0.05em; text-transform:uppercase;">Recommended</div>
+        <div class="feat-title" style="font-size:24px; color:var(--teal);">Shield Plus</div>
+        <div style="font-family:var(--font-mono); color:var(--teal); font-size:12px; margin-bottom:20px; letter-spacing:0.05em"><span id="dynamicPrice">$9.99</span> / month</div>
+        <p class="feat-text" style="margin-bottom:20px; flex-grow:1;">Install directly on your devices for invisible, automatic protection.</p>
+        <ul style="list-style:none; padding:0; margin:0 0 24px 0; font-size:13px; color:var(--white); line-height:2.0;">
+          <li><strong style="color:var(--teal)">✓ Auto-Scans in Background:</strong> WhatsApp, Gmail & socials.</li>
+          <li><strong style="color:var(--teal)">✓ Silent when Safe:</strong> Never interrupts your normal use.</li>
+          <li><strong style="color:var(--teal)">✓ Loud when it Matters:</strong> Alerts you before you click.</li>
+          <li>✓ Unlimited AI Document Scanning</li>
+        </ul>
+        <a class="btn btn-primary" style="width:100%; text-align:center;" id="plusBtn" href="/checkout?plan=plus">Subscribe Now</a>
+      </div>
+
+      <!-- 4. ENTERPRISE TIER -->
+      <div class="feat">
+        <div class="feat-title" style="font-size:24px; color:var(--white);">Enterprise</div>
+        <div style="font-family:var(--font-mono); color:var(--muted); font-size:12px; margin-bottom:20px; letter-spacing:0.05em">Custom Pricing</div>
+        <p class="feat-text" style="margin-bottom:20px; flex-grow:1;">For platforms and businesses needing direct API access and executive reporting.</p>
+        <ul style="list-style:none; padding:0; margin:0 0 24px 0; font-size:13px; color:var(--warm); line-height:2.0;">
+          <li>✓ B2B API Key Access</li>
+          <li>✓ Real-time Webhook Alerts</li>
+          <li>✓ Zero-Persistence Audit Trail</li>
+          <li>✓ Executive Admin Dashboard</li>
+        </ul>
+        <a class="btn btn-outline" style="width:100%; text-align:center;" href="/contact">Contact Sales</a>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div><div class="footer-brand">SHIELD <span class="accent">IQ</span></div><div class="footer-tag">AI Fraud Detection · Global</div></div>
+      <div class="footer-bottom"><div class="footer-note">🔒 Privacy-first · No message content ever stored</div><div class="footer-note">© 2026 SHIELD IQ Technologies</div></div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API = window.location.origin;
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.removeItem('dovtek_token');
+      localStorage.removeItem('dovtek_user');
+      location.href = '/';
+    }
+
+    // Geolocation + Price Detection
+    const CURRENCY_MAP = {
+      'IN': '₹', 'US': '$', 'GB': '£', 'NG': '₦', 'EU': '€', 'DE': '€', 'FR': '€', 'IT': '€', 'ES': '€',
+      'JP': '¥', 'CN': '¥', 'KR': '₩', 'BR': 'R$', 'ZA': 'R', 'AE': 'AED', 'SA': 'SAR', 'AU': 'A$',
+      'CA': 'C$', 'MX': 'MX$', 'RU': '₽', 'TR': '₺', 'EG': 'E£', 'KE': 'KSh', 'GH': 'GH₵', 'PH': '₱',
+      'ID': 'Rp', 'MY': 'RM', 'TH': '฿', 'VN': '₫', 'BD': '৳', 'PK': '₨', 'LK': 'Rs', 'NP': '₨'
+    };
+
+    async function detectLocation() {
+      const cached = localStorage.getItem('dovtek_geo');
+      if (cached) {
+        try { const d = JSON.parse(cached); if (Date.now() - d.ts < 3600000) { applyGeo(d); return; } } catch (e) { }
+      }
+      try {
+        const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
+        const d = await r.json();
+        const geo = { country: d.country_name, code: d.country_code, ts: Date.now() };
+        localStorage.setItem('dovtek_geo', JSON.stringify(geo));
+        applyGeo(geo);
+      } catch (e) {
+        try {
+          const r2 = await fetch('https://api.country.is', { signal: AbortSignal.timeout(4000) });
+          const d2 = await r2.json();
+          const geo = { country: d2.country || 'Unknown', code: d2.country || 'US', ts: Date.now() };
+          localStorage.setItem('dovtek_geo', JSON.stringify(geo));
+          applyGeo(geo);
+        } catch (e2) {
+          applyGeo({ country: 'your region', code: 'US' });
+        }
+      }
+    }
+
+    function applyGeo(geo) {
+      const code = geo.code || 'US';
+      const currency = CURRENCY_MAP[code] || '$';
+      document.getElementById('locBadge').textContent = code;
+      document.getElementById('locCountry').textContent = geo.country || 'Unknown';
+      document.getElementById('locCurrency').textContent = currency;
+
+      const rates = { 'IN': 83, 'NG': 1400, 'GB': 0.79, 'EU': 0.92, 'DE': 0.92, 'FR': 0.92, 'IT': 0.92, 'ES': 0.92, 'ZA': 18.5, 'BR': 5.1, 'AU': 1.5, 'CA': 1.37, 'AE': 3.67, 'KE': 130, 'GH': 14 };
+      const rate = rates[code] || 1;
+
+      let pricePlus = 9.99 * rate;
+      let pricePro = 3.99 * rate;
+
+      if (rate > 10) {
+        pricePlus = Math.round(pricePlus);
+        pricePro = Math.round(pricePro);
+      } else {
+        pricePlus = pricePlus.toFixed(2);
+        pricePro = pricePro.toFixed(2);
+      }
+
+      document.getElementById('dynamicPrice').textContent = currency + pricePlus;
+      document.getElementById('dynamicPricePro').textContent = currency + pricePro;
+    }
+
+    // Language switcher
+    function changeLang(lang) {
+      localStorage.setItem('dovtek_lang', lang);
+    }
+
+    // Initialize Page State
+    document.addEventListener("DOMContentLoaded", () => {
+      const token = localStorage.getItem('dovtek_token');
+      const userStr = localStorage.getItem('dovtek_user');
+      if (!token) {
+        location.href = '/';
+        return;
+      }
+      
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        const plan = user.plan || 'free';
+        const feats = document.querySelectorAll('.feat');
+        
+        if (plan === 'free' && feats[0]) {
+          const btn = feats[0].querySelector('.btn');
+          btn.textContent = 'Active Plan';
+          btn.style.background = 'rgba(0, 212, 160, 0.2)';
+          btn.style.color = 'var(--teal)';
+          btn.style.borderColor = 'var(--teal)';
+          btn.style.pointerEvents = 'none';
+          btn.removeAttribute('href');
+        } else if (plan === 'pro' && feats[1]) {
+          const btn = feats[1].querySelector('.btn');
+          btn.textContent = 'Active Plan';
+          btn.style.background = 'rgba(0, 212, 160, 0.2)';
+          btn.style.color = 'var(--teal)';
+          btn.style.borderColor = 'var(--teal)';
+          btn.style.pointerEvents = 'none';
+          btn.removeAttribute('href');
+        } else if (plan === 'plus' && feats[2]) {
+          const btn = feats[2].querySelector('.btn');
+          btn.textContent = 'Active Plan';
+          btn.style.background = 'rgba(0, 212, 160, 0.2)';
+          btn.style.color = 'var(--teal)';
+          btn.style.borderColor = 'var(--teal)';
+          btn.style.pointerEvents = 'none';
+          btn.removeAttribute('href');
+        }
+      }
+      detectLocation();
+    });
+  </script>
+</body>
+</html>

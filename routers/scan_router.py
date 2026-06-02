@@ -142,32 +142,32 @@ async def scan_json(
     db: Session = Depends(get_db),
     current_user: Optional[db_models.User] = Depends(get_optional_user),
 ):
-    """Analyze a text message (JSON body) for fraud signals."""
+    """Analyze a text message (JSON body) for fraud signals. Restrict usage to paid subscribers and B2B keys."""
     request_id = uuid.uuid4().hex[:16]
     api_key_id = getattr(request.state, "api_key_id", None)
     partner_name = getattr(request.state, "partner_name", None)
     tier = getattr(request.state, "tier", None)
     org_id = getattr(request.state, "org_id", None)
 
-    if current_user and current_user.plan == "free" and not api_key_id:
-        from datetime import datetime, timezone
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-        scan_count = db.query(db_models.Scan).filter(
-            db_models.Scan.user_id == current_user.id,
-            db_models.Scan.scanned_at >= today_start
-        ).count()
-        if scan_count >= 3:
+    # 1. Allow if B2B Partner API key is used
+    if api_key_id:
+        user_plan = tier or "enterprise"
+    else:
+        # 2. Require authenticated user
+        if not current_user:
+            raise HTTPException(
+                status_code=401,
+                detail="Authentication required. Please log in through the extension or dashboard."
+            )
+        # 3. Require 'plus' or 'enterprise' plan for extension scanning
+        if current_user.plan not in ["plus", "enterprise"]:
             raise HTTPException(
                 status_code=403,
-                detail="Daily limit reached: Free plan is limited to 3 scans per day."
+                detail="Shield Plus or Enterprise subscription is required to use the Chrome Extension."
             )
+        user_plan = current_user.plan
 
     try:
-        if api_key_id:
-            user_plan = tier or "enterprise"
-        else:
-            user_plan = current_user.plan if current_user else "free"
-
         result = await analyze_message(body.message, user_plan=user_plan)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
