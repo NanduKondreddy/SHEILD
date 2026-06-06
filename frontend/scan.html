@@ -224,11 +224,11 @@
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
         <a href="/checkout?plan=pro" style="padding:14px 16px;border-radius:10px;border:1px solid rgba(0,212,160,0.2);display:flex;justify-content:space-between;align-items:center;text-decoration:none;transition:border-color 0.2s">
           <span style="font-weight:700;font-size:15px;color:#fff">SHIELD IQ Pro</span>
-          <span style="font-family:var(--font-mono);font-size:13px;color:var(--teal);font-weight:700">$3.99 / mo</span>
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--teal);font-weight:700" id="upgPricePro">$3.99 / mo</span>
         </a>
         <a href="/checkout?plan=plus" style="padding:14px 16px;border-radius:10px;border:1px solid var(--teal);background:rgba(0,212,160,0.08);display:flex;justify-content:space-between;align-items:center;text-decoration:none;transition:border-color 0.2s">
           <span style="font-weight:700;font-size:15px;color:#fff">🛡️ Shield Plus <span style="font-size:10px;color:#94a3b8;font-weight:400">Recommended</span></span>
-          <span style="font-family:var(--font-mono);font-size:13px;color:var(--teal);font-weight:700">$9.99 / mo</span>
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--teal);font-weight:700" id="upgPricePlus">$9.99 / mo</span>
         </a>
       </div>
       <a href="/plans" style="color:var(--teal);font-size:12px;font-family:var(--font-mono);text-decoration:underline;margin-bottom:20px;display:inline-block;">View full plan details & features →</a>
@@ -672,9 +672,35 @@ async function detectLocation(){
 function applyGeo(geo){
   const code=geo.code||'US';
   const currency=CURRENCY_MAP[code]||'USD $';
-  document.getElementById('locBadge').textContent=code;
-  document.getElementById('locCountry').textContent=geo.country||'Unknown';
-  document.getElementById('locCurrency').textContent=currency;
+  const elBadge = document.getElementById('locBadge');
+  if (elBadge) elBadge.textContent=code;
+  const elCountry = document.getElementById('locCountry');
+  if (elCountry) elCountry.textContent=geo.country||'Unknown';
+  const elCurrency = document.getElementById('locCurrency');
+  if (elCurrency) elCurrency.textContent=currency;
+
+  // Pricing conversion
+  const rates = { 'IN': 83, 'NG': 1400, 'GB': 0.79, 'EU': 0.92, 'DE': 0.92, 'FR': 0.92, 'IT': 0.92, 'ES': 0.92, 'ZA': 18.5, 'BR': 5.1, 'AU': 1.5, 'CA': 1.37, 'AE': 3.67, 'KE': 130, 'GH': 14 };
+  const rate = rates[code] || 1;
+
+  let pricePlus = 9.99 * rate;
+  let pricePro = 3.99 * rate;
+
+  if (rate > 10) {
+    pricePlus = Math.round(pricePlus);
+    pricePro = Math.round(pricePro);
+  } else {
+    pricePlus = pricePlus.toFixed(2);
+    pricePro = pricePro.toFixed(2);
+  }
+
+  // Extract currency symbol (last char of currency map value, e.g. 'INR \u20b9' -> '\u20b9')
+  const symbol = currency.includes(' ') ? currency.split(' ')[1] : currency;
+
+  const elPro = document.getElementById('upgPricePro');
+  const elPlus = document.getElementById('upgPricePlus');
+  if (elPro) elPro.textContent = symbol + pricePro + ' / mo';
+  if (elPlus) elPlus.textContent = symbol + pricePlus + ' / mo';
 }
 
 // ── Auto-Translate Feature ───────────────────────────────────────────────
