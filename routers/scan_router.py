@@ -47,6 +47,24 @@ async def scan(
     if not message and not image_bytes:
         raise HTTPException(status_code=400, detail="Please provide a message or upload a file")
 
+    if not current_user and not api_key_id:
+        from datetime import datetime, timezone
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        guest_count = db.query(db_models.Scan).filter(
+            db_models.Scan.user_id.is_(None),
+            db_models.Scan.scanned_at >= today_start,
+        ).count()
+        if guest_count >= 1:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "error": "quota_exceeded",
+                    "tier": "guest",
+                    "message": "Guest limit reached. Create a free account for 3 scans/day.",
+                    "upgrade_url": "/?signup=1",
+                }
+            )
+
     if current_user and current_user.plan == "free" and not api_key_id:
         from datetime import datetime, timezone
         today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -56,9 +74,26 @@ async def scan(
         ).count()
         if scan_count >= 3:
             raise HTTPException(
-                status_code=403,
-                detail="Daily limit reached: Free plan is limited to 3 scans per day."
+                status_code=402,
+                detail={
+                    "error": "quota_exceeded",
+                    "tier": "free",
+                    "message": "Daily limit reached. Upgrade to Pro for unlimited scans.",
+                    "upgrade_url": "/checkout?plan=pro",
+                }
             )
+        
+    # PDF/image gate — add after quota check in /scan endpoint
+    if image_media_type and current_user and current_user.plan == "free":
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "feature_locked",
+                "feature": "pdf_image_scanning",
+                "message": "PDF and image scanning requires Pro.",
+                "upgrade_url": "/checkout?plan=pro",
+            }
+        )
 
     try:
         if api_key_id:
@@ -149,23 +184,61 @@ async def scan_json(
     tier = getattr(request.state, "tier", None)
     org_id = getattr(request.state, "org_id", None)
 
-    # 1. Allow if B2B Partner API key is used
-    if api_key_id:
-        user_plan = tier or "enterprise"
-    else:
-        # 2. Require authenticated user
+    # ── Web app quota (non-extension requests) ───────────────────────────────
+    if not api_key_id:
         if not current_user:
-            raise HTTPException(
-                status_code=401,
-                detail="Authentication required. Please log in through the extension or dashboard."
-            )
-        # 3. Require 'plus' or 'enterprise' plan for extension scanning
-        if current_user.plan not in ["plus", "enterprise"]:
+            # Guest quota
+            from datetime import datetime, timezone
+            today_start = datetime.now(timezone.utc).replace(
+                hour=0, minute=0, second=0, microsecond=0)
+            guest_count = db.query(db_models.Scan).filter(
+                db_models.Scan.user_id.is_(None),
+                db_models.Scan.scanned_at >= today_start,
+            ).count()
+            if guest_count >= 1:
+                raise HTTPException(
+                    status_code=402,
+                    detail={
+                        "error": "quota_exceeded",
+                        "tier": "guest",
+                        "message": "Guest limit reached. Create a free account for 3 scans/day.",
+                        "upgrade_url": "/?signup=1",
+                    }
+                )
+        elif current_user.plan == "free":
+            # Free user quota
+            from datetime import datetime, timezone
+            today_start = datetime.now(timezone.utc).replace(
+                hour=0, minute=0, second=0, microsecond=0)
+            scan_count = db.query(db_models.Scan).filter(
+                db_models.Scan.user_id == current_user.id,
+                db_models.Scan.scanned_at >= today_start
+            ).count()
+            if scan_count >= 3:
+                raise HTTPException(
+                    status_code=402,
+                    detail={
+                        "error": "quota_exceeded",
+                        "tier": "free",
+                        "message": "Daily limit reached. Upgrade to Pro for unlimited scans.",
+                        "upgrade_url": "/checkout?plan=pro",
+                    }
+                )
+
+    # ── Extension / JSON endpoint plan check ─────────────────────────────────
+    # /scan/json is called by the Chrome extension — requires Plus or Enterprise
+    if not api_key_id and current_user:
+        if current_user.plan not in ("pro", "plus", "enterprise"):
             raise HTTPException(
                 status_code=403,
                 detail="Shield Plus or Enterprise subscription is required to use the Chrome Extension."
             )
-        user_plan = current_user.plan
+
+    # ── Set user_plan for analyzer ───────────────────────────────────────────
+    if api_key_id:
+        user_plan = tier or "enterprise"
+    else:
+        user_plan = current_user.plan if current_user else "free"
 
     try:
         result = await analyze_message(body.message, user_plan=user_plan)

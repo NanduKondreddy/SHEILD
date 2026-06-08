@@ -12,7 +12,7 @@ load_dotenv()
 
 from database import engine
 import db_models
-from routers import auth_router, scan_router
+from routers import auth_router, scan_router, billings
 from routers import audit_router, webhook_router, community_router
 from prompts import DEMO_SCENARIOS
 from enterprise.api_key_manager import validate_key
@@ -27,6 +27,20 @@ with engine.connect() as conn:
         conn.commit()
     except Exception:
         pass
+
+    # Ensure Paystack columns exist
+    for col in ["paystack_customer_code", "paystack_subscription_code", "subscription_status"]:
+        try:
+            conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} VARCHAR"))
+            conn.commit()
+        except Exception:
+            pass
+    try:
+        conn.execute(text("ALTER TABLE users ADD COLUMN subscription_ends_at DATETIME"))
+        conn.commit()
+    except Exception:
+        pass
+
 
 app = FastAPI(
     title="ShieldIQ API",
@@ -101,6 +115,7 @@ app.add_middleware(
 # ── Routers ──────────────────────────────────────────────────────────────────
 app.include_router(auth_router.router)
 app.include_router(scan_router.router)
+app.include_router(billings.router)
 
 # Enterprise routers
 app.include_router(audit_router.router)

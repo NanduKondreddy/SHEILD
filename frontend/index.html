@@ -876,7 +876,7 @@
         localStorage.setItem('dovtek_token', d.token);
         localStorage.setItem('dovtek_user', JSON.stringify(d.user));
         showToast(`Welcome back, ${d.user.full_name}!`); closeModal('login');
-        setTimeout(() => location.href = '/scan', 800);
+        setTimeout(() => location.reload(), 800);
       } catch (e) { showToast(e.message) }
     }
 
@@ -893,7 +893,7 @@
         localStorage.setItem('dovtek_token', d.token);
         localStorage.setItem('dovtek_user', JSON.stringify(d.user));
         showToast('Account created!'); closeModal('signup');
-        setTimeout(() => location.href = '/scan', 800);
+        setTimeout(() => location.reload(), 800);
       } catch (e) { showToast(e.message) }
     }
 
@@ -927,6 +927,24 @@
       'ES': '🇪🇸', 'IT': '🇮🇹', 'NL': '🇳🇱', 'SE': '🇸🇪', 'PL': '🇵🇱', 'LK': '🇱🇰', 'NP': '🇳🇵'
     };
 
+    function guessCountryByTimezone() {
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz) {
+          if (tz.includes('Kolkata') || tz.includes('Calcutta')) return 'IN';
+          if (tz.includes('Lagos')) return 'NG';
+          if (tz.includes('London')) return 'GB';
+          if (tz.includes('Johannesburg')) return 'ZA';
+          if (tz.includes('Nairobi')) return 'KE';
+          if (tz.includes('Accra')) return 'GH';
+        }
+        const offset = new Date().getTimezoneOffset();
+        if (offset === -330) return 'IN';
+        if (offset === -60) return 'NG';
+      } catch (e) {}
+      return 'US';
+    }
+
     async function detectLocation() {
       const cached = localStorage.getItem('dovtek_geo');
       if (cached) {
@@ -946,7 +964,9 @@
           localStorage.setItem('dovtek_geo', JSON.stringify(geo));
           applyGeo(geo);
         } catch (e2) {
-          applyGeo({ country: 'your region', code: 'US' });
+          const fallbackCode = guessCountryByTimezone();
+          const fallbackNames = { 'IN': 'India', 'NG': 'Nigeria', 'US': 'United States' };
+          applyGeo({ country: fallbackNames[fallbackCode] || 'your region', code: fallbackCode });
         }
       }
     }
@@ -1218,22 +1238,56 @@
       }
     })();
 
+    function toggleAvatarDropdown(event) {
+      event.stopPropagation();
+      const dropdown = document.getElementById('avatarDropdown');
+      if (dropdown) dropdown.classList.toggle('show');
+    }
+    window.addEventListener('click', () => {
+      const dropdown = document.getElementById('avatarDropdown');
+      if (dropdown) dropdown.classList.remove('show');
+    });
+
     function updateNavAuth() {
       const token = localStorage.getItem('dovtek_token');
+      document.body.setAttribute('data-shieldiq-token-bridge', token || '');
+      document.body.setAttribute('data-shieldiq-user-bridge', localStorage.getItem('dovtek_user') || '');
       if (token) {
+        let userObj = {};
+        try {
+          userObj = JSON.parse(localStorage.getItem('dovtek_user') || '{}');
+        } catch(e) {}
+        const initials = (userObj.full_name || userObj.email || 'U').charAt(0).toUpperCase();
+        const displayName = userObj.full_name || userObj.email?.split('@')[0] || 'User';
+        const planLabel = userObj.plan === 'plus' ? 'Shield Plus' : userObj.plan === 'pro' ? 'ShieldIQ Pro' : 'Free Plan';
+        const upgradeStyle = userObj.plan === 'plus' ? 'style="display:none;"' : '';
+
         const desktopAuth = document.getElementById('desktopAuthNav');
         if (desktopAuth) {
           desktopAuth.innerHTML = `
-        <a class="btn-ghost" href="/dashboard">Dashboard</a>
-        <a class="btn btn-primary btn-sm" href="#" onclick="localStorage.removeItem('dovtek_token');localStorage.removeItem('dovtek_user');Object.keys(localStorage).forEach(k=>k.startsWith('dovtek_scan_')&&localStorage.removeItem(k));location.reload();return false" style="background:var(--dark);border:1px solid var(--border);color:var(--white);">Logout</a>
-      `;
+            <div class="avatar-wrapper" id="avatarWrapper">
+              <div class="avatar-btn" id="avatarBtn" onclick="toggleAvatarDropdown(event)">${initials}</div>
+              <div class="avatar-dropdown" id="avatarDropdown">
+                <div class="dropdown-header">
+                  <div class="dropdown-user-name">${displayName}</div>
+                  <div class="dropdown-user-plan">${planLabel}</div>
+                </div>
+                <a href="/dashboard" class="dropdown-item">📊 Dashboard</a>
+                <a href="/scan" class="dropdown-item">🛡️ Scan Message</a>
+                <a href="/plans" class="dropdown-item" id="dropdownUpgradeLink" ${upgradeStyle}>🚀 Upgrade Plan</a>
+                <a href="#" class="dropdown-item logout-item" onclick="localStorage.removeItem('dovtek_token');localStorage.removeItem('dovtek_user');Object.keys(localStorage).forEach(k=>k.startsWith('dovtek_scan_')&&localStorage.removeItem(k));location.reload();return false">🚪 Logout</a>
+              </div>
+            </div>
+          `;
         }
         const mobileAuth = document.getElementById('mobileAuthNav');
         if (mobileAuth) {
           mobileAuth.innerHTML = `
-        <a href="/dashboard">Dashboard</a>
-        <a href="#" onclick="localStorage.removeItem('dovtek_token');localStorage.removeItem('dovtek_user');Object.keys(localStorage).forEach(k=>k.startsWith('dovtek_scan_')&&localStorage.removeItem(k));location.reload();return false" style="color:#ef4444">Logout</a>
-      `;
+            <a href="/dashboard">Dashboard</a>
+            <a href="/scan">Scanner</a>
+            <a href="/plans" ${upgradeStyle}>Upgrade Plan</a>
+            <a href="#" onclick="localStorage.removeItem('dovtek_token');localStorage.removeItem('dovtek_user');Object.keys(localStorage).forEach(k=>k.startsWith('dovtek_scan_')&&localStorage.removeItem(k));location.reload();return false" style="color:#ef4444">Logout</a>
+          `;
         }
 
         // Adapt Hero CTA
