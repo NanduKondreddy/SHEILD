@@ -7,6 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%2300d4a0'/><stop offset='1' stop-color='%2300b98a'/></linearGradient></defs><rect width='32' height='32' rx='6' fill='url(%23g)'/><text x='16' y='22' text-anchor='middle' font-family='sans-serif' font-weight='800' font-size='13' fill='%23060810'>DT</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/global.css">
+<script src="/js/subscription-manage.js"></script>
 <style>
 .container{max-width:900px;margin:100px auto 60px;padding:0 24px}
 .dash-hello{font-size:28px;font-weight:800;margin-bottom:4px}
@@ -96,6 +97,7 @@
         <a href="/dashboard" class="dropdown-item">📊 Dashboard</a>
         <a href="/scan" class="dropdown-item">🛡️ Scan Message</a>
         <a href="/plans" class="dropdown-item" id="dropdownUpgradeLink">🚀 Upgrade Plan</a>
+        <a href="#" class="dropdown-item" onclick="openSubscriptionModal();return false">⚙️ Manage Subscription</a>
         <a href="#" class="dropdown-item logout-item" onclick="logout();return false" id="navLogout">🚪 Logout</a>
       </div>
     </div>
@@ -527,8 +529,8 @@ async function loadDashboard() {
     const user = await userResp.json();
 
     // Sync plan from server
-    if (user.plan && user.plan !== userPlan) {
-      const updated = { ...userObj, plan: user.plan };
+    if (user.plan && (user.plan !== userPlan || user.pending_plan !== userObj.pending_plan)) {
+      const updated = { ...userObj, plan: user.plan, pending_plan: user.pending_plan, subscription_ends_at: user.subscription_ends_at };
       localStorage.setItem('dovtek_user', JSON.stringify(updated));
       location.reload();
       return;

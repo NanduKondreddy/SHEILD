@@ -20,6 +20,7 @@ class User(Base):
     paystack_subscription_code = Column(String, nullable=True)
     subscription_status        = Column(String, nullable=True)   # active | canceled | past_due
     subscription_ends_at       = Column(DateTime, nullable=True)
+    pending_plan               = Column(String, nullable=True)   # pro | free
 
     scans = relationship("Scan", back_populates="user")
 

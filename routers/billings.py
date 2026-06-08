@@ -4,7 +4,7 @@ import hmac
 import hashlib
 import logging
 import httpx
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -62,6 +62,10 @@ class VerifyRequest(BaseModel):
     plan: str
 
 
+class ChangeSubscriptionRequest(BaseModel):
+    target_plan: str
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────
 def _normalise_plan(plan: str) -> str:
     """Normalise shield_plus → plus to match db column values."""
@@ -72,6 +76,29 @@ def _get_amount(plan: str, country_code: str) -> dict:
     cfg = CURRENCY_CONFIG.get(country_code.upper(), DEFAULT_CURRENCY)
     amount = cfg["pro"] if plan == "pro" else cfg["plus"]
     return {"amount": amount, "currency": cfg["currency"]}
+
+
+def _get_billing_details(plan: str, country_code: str) -> dict:
+    country = (country_code or "").upper()
+    env_key = f"PAYSTACK_PLAN_{plan.upper()}_{country}"
+    specific_plan = os.environ.get(env_key)
+    
+    if specific_plan:
+        cfg = CURRENCY_CONFIG.get(country, DEFAULT_CURRENCY)
+        amount = cfg["pro"] if plan == "pro" else cfg["plus"]
+        return {
+            "plan_code": specific_plan,
+            "amount": amount,
+            "currency": cfg["currency"]
+        }
+    else:
+        plan_code = PAYSTACK_PLAN_PRO if plan == "pro" else PAYSTACK_PLAN_PLUS
+        amount = DEFAULT_CURRENCY["pro"] if plan == "pro" else DEFAULT_CURRENCY["plus"]
+        return {
+            "plan_code": plan_code,
+            "amount": amount,
+            "currency": DEFAULT_CURRENCY["currency"]
+        }
 
 
 def _paystack_headers() -> dict:
@@ -117,6 +144,7 @@ def _verify_paystack_signature(payload: bytes, signature: str) -> bool:
 @router.post("/create-checkout")
 async def create_checkout(
     body: CheckoutRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: db_models.User = Depends(get_current_user),
 ):
@@ -140,17 +168,27 @@ async def create_checkout(
         }
 
     # ── LIVE PAYSTACK ─────────────────────────────────────────────────────
-    pricing   = _get_amount(plan, body.country_code)
+    billing_details = _get_billing_details(plan, body.country_code)
     reference = f"shieldiq_{current_user.id}_{plan}_{int(datetime.now().timestamp())}"
-    plan_code = PAYSTACK_PLAN_PRO if plan == "pro" else PAYSTACK_PLAN_PLUS
+
+    # Use the current frontend origin or referrer for the callback to prevent origin-mismatched logout
+    origin = request.headers.get("origin")
+    if not origin:
+        referer = request.headers.get("referer")
+        if referer:
+            from urllib.parse import urlparse
+            parsed = urlparse(referer)
+            origin = f"{parsed.scheme}://{parsed.netloc}"
+        else:
+            origin = APP_URL.rstrip('/')
 
     payload = {
         "email":        current_user.email,
-        "amount":       pricing["amount"],
-        "currency":     pricing["currency"],
+        "amount":       billing_details["amount"],
+        "currency":     billing_details["currency"],
         "reference":    reference,
-        "plan":         plan_code,
-        "callback_url": f"{APP_URL}/dashboard?upgraded=true&plan={plan}",
+        "plan":         billing_details["plan_code"],
+        "callback_url": f"{origin}/dashboard?upgraded=true&plan={plan}",
         "metadata": {
             "user_id": current_user.id,
             "plan":    plan,
@@ -216,6 +254,7 @@ async def verify_payment(
         customer_code=customer.get("customer_code"),
         subscription_code=subscription.get("plan_code"),
         status="active",
+        ends_at=datetime.now(timezone.utc) + timedelta(days=30),
     )
 
     return {"ok": True, "plan": plan, "mode": "live"}
@@ -235,7 +274,12 @@ async def activate_dummy(
     if plan not in ("pro", "plus"):
         raise HTTPException(400, detail="Invalid plan")
 
-    _write_plan(db, current_user, plan=plan, status="active")
+    _write_plan(
+        db, current_user,
+        plan=plan,
+        status="active",
+        ends_at=datetime.now(timezone.utc) + timedelta(days=30),
+    )
     return {"ok": True, "plan": plan, "mode": "dummy"}
 
 
@@ -270,6 +314,7 @@ async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
                     customer_code=data.get("customer", {}).get("customer_code"),
                     subscription_code=data.get("plan_object", {}).get("plan_code"),
                     status="active",
+                    ends_at=datetime.now(timezone.utc) + timedelta(days=30),
                 )
 
     elif event_type in ("subscription.disable", "subscription.not_renew"):
@@ -292,31 +337,118 @@ async def paystack_webhook(request: Request, db: Session = Depends(get_db)):
     return {"status": "ok"}
 
 
-@router.delete("/cancel")
+@router.post("/cancel")
 async def cancel_subscription(
     db: Session = Depends(get_db),
     current_user: db_models.User = Depends(get_current_user),
 ):
-    if DUMMY_MODE:
-        _write_plan(db, current_user, plan="free", status="canceled")
-        return {"ok": True, "message": "Subscription cancelled (dummy mode)"}
+    if current_user.plan == "free":
+        raise HTTPException(400, detail="You do not have an active subscription to cancel.")
 
-    if not current_user.paystack_subscription_code:
-        raise HTTPException(400, detail="No active subscription found")
+    if not current_user.subscription_ends_at:
+        current_user.subscription_ends_at = datetime.now(timezone.utc) + timedelta(days=30)
 
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            f"{PAYSTACK_API}/subscription/disable",
-            json={
-                "code":  current_user.paystack_subscription_code,
-                "token": current_user.paystack_customer_code,
-            },
-            headers=_paystack_headers(),
-            timeout=10,
-        )
+    current_user.pending_plan = "free"
+    current_user.subscription_status = "canceled"
 
-    if not resp.json().get("status"):
-        raise HTTPException(500, detail="Failed to cancel subscription")
+    # In live Paystack mode, disable auto-renew on Paystack's end
+    if not DUMMY_MODE and current_user.paystack_subscription_code:
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f"{PAYSTACK_API}/subscription/disable",
+                    json={
+                        "code":  current_user.paystack_subscription_code,
+                        "token": current_user.paystack_customer_code,
+                    },
+                    headers=_paystack_headers(),
+                    timeout=10,
+                )
+        except Exception as e:
+            logger.warning("Could not disable Paystack auto-renewal: %s", str(e))
 
-    _write_plan(db, current_user, plan="free", status="canceled")
-    return {"ok": True, "message": "Subscription cancelled"}
+    db.commit()
+    db.refresh(current_user)
+    readable_date = current_user.subscription_ends_at.strftime("%Y-%m-%d")
+    return {
+        "ok": True,
+        "message": f"Your subscription cancellation has been scheduled. Your current plan remains active until {readable_date}."
+    }
+
+
+@router.post("/change-subscription")
+async def change_subscription(
+    body: ChangeSubscriptionRequest,
+    db: Session = Depends(get_db),
+    current_user: db_models.User = Depends(get_current_user),
+):
+    if current_user.plan == "free":
+        raise HTTPException(400, detail="You do not have an active subscription to change.")
+    
+    target = body.target_plan.lower()
+    if target not in ("pro", "free"):
+        raise HTTPException(400, detail="Invalid target plan.")
+        
+    if PLAN_RANK.get(current_user.plan, 0) <= PLAN_RANK.get(target, 0):
+        raise HTTPException(400, detail="You can only downgrade or cancel your plan. Use checkout to upgrade.")
+
+    # Calculate end date if not set
+    if not current_user.subscription_ends_at:
+        current_user.subscription_ends_at = datetime.now(timezone.utc) + timedelta(days=30)
+
+    current_user.pending_plan = target
+    current_user.subscription_status = "canceled" if target == "free" else "pending_downgrade"
+    
+    # Disable Paystack auto-renew if canceling completely
+    if not DUMMY_MODE and target == "free" and current_user.paystack_subscription_code:
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f"{PAYSTACK_API}/subscription/disable",
+                    json={
+                        "code":  current_user.paystack_subscription_code,
+                        "token": current_user.paystack_customer_code,
+                    },
+                    headers=_paystack_headers(),
+                    timeout=10,
+                )
+        except Exception as e:
+            logger.warning("Could not disable Paystack auto-renewal: %s", str(e))
+
+    db.commit()
+    db.refresh(current_user)
+    
+    readable_date = current_user.subscription_ends_at.strftime("%Y-%m-%d")
+    return {
+        "ok": True,
+        "message": f"Your plan change to {target} has been scheduled. Your current plan remains active until {readable_date}.",
+        "user": {
+            "plan": current_user.plan,
+            "pending_plan": current_user.pending_plan,
+            "subscription_ends_at": current_user.subscription_ends_at.isoformat()
+        }
+    }
+
+
+@router.post("/resume-subscription")
+async def resume_subscription(
+    db: Session = Depends(get_db),
+    current_user: db_models.User = Depends(get_current_user),
+):
+    if not current_user.pending_plan:
+        raise HTTPException(400, detail="No pending plan changes found.")
+
+    current_user.pending_plan = None
+    current_user.subscription_status = "active"
+    current_user.subscription_ends_at = None
+
+    db.commit()
+    db.refresh(current_user)
+    return {
+        "ok": True,
+        "message": "Your subscription has been resumed successfully.",
+        "user": {
+            "plan": current_user.plan,
+            "pending_plan": current_user.pending_plan
+        }
+    }

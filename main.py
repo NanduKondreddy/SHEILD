@@ -40,6 +40,11 @@ with engine.connect() as conn:
         conn.commit()
     except Exception:
         pass
+    try:
+        conn.execute(text("ALTER TABLE users ADD COLUMN pending_plan VARCHAR"))
+        conn.commit()
+    except Exception:
+        pass
 
 
 app = FastAPI(

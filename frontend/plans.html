@@ -6,6 +6,7 @@
   <title>ShieldIQ — Plans & Pricing</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/global.css">
+  <script src="/js/subscription-manage.js"></script>
   <style>
     .plans-container {
       max-width: 1200px;
@@ -136,6 +137,7 @@
           <a href="/dashboard" class="dropdown-item">📊 Dashboard</a>
           <a href="/scan" class="dropdown-item">🛡️ Scan Message</a>
           <a href="/plans" class="dropdown-item" id="dropdownUpgradeLink">🚀 Upgrade Plan</a>
+          <a href="#" class="dropdown-item" onclick="openSubscriptionModal();return false">⚙️ Manage Subscription</a>
           <a href="#" class="dropdown-item logout-item" onclick="logout();return false" id="navLogout">🚪 Logout</a>
         </div>
       </div>

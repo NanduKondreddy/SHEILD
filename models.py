@@ -37,6 +37,8 @@ class UserOut(BaseModel):
     email: str
     plan: str
     created_at: datetime
+    pending_plan: Optional[str] = None
+    subscription_ends_at: Optional[datetime] = None
  
     class Config:
         from_attributes = True

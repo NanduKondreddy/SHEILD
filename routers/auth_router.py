@@ -63,6 +63,8 @@ def me(current_user: db_models.User = Depends(get_current_user)):
         email=current_user.email,
         plan=current_user.plan,
         created_at=current_user.created_at,
+        pending_plan=current_user.pending_plan,
+        subscription_ends_at=current_user.subscription_ends_at,
     )
 
 
@@ -80,6 +82,8 @@ def upgrade(plan: str, db: Session = Depends(get_db), current_user: db_models.Us
         email=current_user.email,
         plan=current_user.plan,
         created_at=current_user.created_at,
+        pending_plan=current_user.pending_plan,
+        subscription_ends_at=current_user.subscription_ends_at,
     )
 
 
