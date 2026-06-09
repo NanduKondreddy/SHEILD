@@ -41,3 +41,15 @@ class Scan(Base):
     scanned_at    = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="scans")
+
+
+class SupportTicket(Base):
+    __tablename__ = "support_tickets"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    name       = Column(String, nullable=False)
+    email      = Column(String, nullable=False)
+    subject    = Column(String, nullable=False)
+    message    = Column(String, nullable=False)
+    status     = Column(String, default="Open")  # Open | Resolved
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
