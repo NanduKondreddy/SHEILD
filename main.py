@@ -220,10 +220,12 @@ async def serve_about():
     return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "about.html"))
 
 @app.get("/contact")
+@app.get("/contact.html")
 async def serve_contact():
     return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "contact.html"))
 
 # ── Enterprise Pages ─────────────────────────────────────────────────────────
 @app.get("/admin")
+@app.get("/admin.html")
 async def serve_admin():
     return NoCacheFileResponse(os.path.join(FRONTEND_DIR, "admin.html"))
